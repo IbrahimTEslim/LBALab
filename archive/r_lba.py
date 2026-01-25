@@ -620,7 +620,7 @@ if __name__ == "__main__":
     
     # Test with different LBAs
     test_cases = [
-        {"file_path": "C:\\", "lba": 914925568, "description": "Boot sector (MBR)"},
+        {"file_path": "C:\\", "lba": 935218376, "description": "Boot sector (MBR)"},
         # {"file_path": "C:\\", "lba": 8459073, "description": "Boot sector (MBR)"},
         # {"file_path": "C:\\", "lba": 8459074, "description": "Boot sector (MBR)"},
         # {"file_path": "C:\\", "lba": 8459075, "description": "Boot sector (MBR)"},

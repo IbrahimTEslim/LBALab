@@ -15,7 +15,7 @@ FILE_BEGIN = 0
 
 def get_drive_size(drive_number):
     """Get the total size and sector count of a drive"""
-    drive_path = f"\\\\.\\PhysicalDrive{drive_number}"
+    drive_path = f"\\\\.\\{drive_number}:"
     handle = INVALID_HANDLE_VALUE
     
     try:
@@ -61,18 +61,18 @@ def write_to_lba(drive_number, lba, payload, sector_size=512):
     """
     
     # Validate LBA range first
-    total_bytes, total_sectors = get_drive_size(drive_number)
-    if total_sectors is None:
-        print(f"Cannot determine size of drive {drive_number}")
-        return False
+    # total_bytes, total_sectors = get_drive_size(drive_number)
+    # if total_sectors is None:
+    #     print(f"Cannot determine size of drive {drive_number}")
+    #     return False
     
-    if lba >= total_sectors:
-        print(f"Error: LBA {lba} exceeds drive capacity of {total_sectors:,} sectors")
-        print(f"Maximum valid LBA: {total_sectors - 1:,}")
-        return False
+    # if lba >= total_sectors:
+    #     print(f"Error: LBA {lba} exceeds drive capacity of {total_sectors:,} sectors")
+    #     print(f"Maximum valid LBA: {total_sectors - 1:,}")
+    #     return False
     
-    print(f"Drive {drive_number}: {total_sectors:,} sectors ({total_bytes / (1024**3):.2f} GB)")
-    print(f"Writing to LBA {lba:,} (valid range: 0 to {total_sectors-1:,})")
+    # print(f"Drive {drive_number}: {total_sectors:,} sectors ({total_bytes / (1024**3):.2f} GB)")
+    # print(f"Writing to LBA {lba:,} (valid range: 0 to {total_sectors-1:,})")
     
     # Ensure payload is bytes
     if isinstance(payload, str):
@@ -85,7 +85,7 @@ def write_to_lba(drive_number, lba, payload, sector_size=512):
         payload = payload[:sector_size]
         print(f"Warning: Payload truncated to {sector_size} bytes")
     
-    drive_path = f"\\\\.\\PhysicalDrive{drive_number}"
+    drive_path = f"\\\\.\\{drive_number}:"
     handle = INVALID_HANDLE_VALUE
     
     try:
@@ -282,18 +282,18 @@ def main():
     print()
     
     # List available drives
-    available_drives = list_drives()
-    if not available_drives:
-        return
+    # available_drives = list_drives()
+    # if not available_drives:
+    #     return
     
     print()
     
     try:
         # Get drive number
-        drive_num = int(input("Enter drive number: "))
-        if drive_num not in available_drives:
-            print(f"Drive {drive_num} not available.")
-            return
+        drive_num = input("Enter drive number: ")
+        # if drive_num not in available_drives:
+        #     print(f"Drive {drive_num} not available.")
+        #     return
         
         # Get LBA
         lba = int(input("Enter LBA: "))

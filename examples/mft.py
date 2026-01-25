@@ -275,18 +275,17 @@ def fetch_mft_record_raw(drive_letter, mft_record_number):
         record_byte_offset = mft_record_number * vol_info.BytesPerFileRecordSegment
         absolute_offset = mft_start_byte_offset + record_byte_offset
         
-        # Set file pointer to MFT record location
-        high = ctypes.c_long(absolute_offset >> 32)
-        low = ctypes.c_long(absolute_offset & 0xFFFFFFFF)
-        
-        result = ctypes.windll.kernel32.SetFilePointer(
-            vol_handle, low, ctypes.byref(high), 0  # FILE_BEGIN
+        # Set file pointer to MFT record location - FIXED
+        result = ctypes.windll.kernel32.SetFilePointerEx(
+            vol_handle,
+            ctypes.c_longlong(absolute_offset),
+            None,
+            0  # FILE_BEGIN
         )
         
-        if result == INVALID_HANDLE_VALUE:
+        if not result:
             error_code = ctypes.windll.kernel32.GetLastError()
-            if error_code != 0:  # Only raise if there's actually an error
-                raise ctypes.WinError(error_code)
+            raise ctypes.WinError(error_code)
         
         # Read MFT record
         record_size = vol_info.BytesPerFileRecordSegment
@@ -631,14 +630,14 @@ def get_file_info_safe(file_path):
         safe_handle_close(file_handle)
 
 def calculate_mft_record_lba(drive_letter, mft_record_number, vol_info, partition_start_lba):
-    """Calculate the LBA of an MFT record"""
+    """Calculate the LBA of an MFT record - FIXED VERSION"""
     try:
         # Calculate MFT record location
         mft_start_bytes = vol_info.MftStartLcn * vol_info.BytesPerCluster
         mft_record_offset_bytes = mft_record_number * vol_info.BytesPerFileRecordSegment
         mft_record_absolute_offset = mft_start_bytes + mft_record_offset_bytes
         
-        # Convert to LBA (using 512 byte sectors)
+        # Convert to LBA (ALWAYS use 512 bytes per sector for LBA calculation)
         mft_record_lba_relative = mft_record_absolute_offset // 512
         mft_record_lba_absolute = partition_start_lba + mft_record_lba_relative
         
