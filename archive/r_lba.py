@@ -538,6 +538,7 @@ def get_physical_drive_from_path(file_path):
     if drive_char == 'C':
         return 0
     else:
+        return 0
         return ord(drive_char) - ord('C')
 
 
@@ -620,7 +621,7 @@ if __name__ == "__main__":
     
     # Test with different LBAs
     test_cases = [
-        {"file_path": "C:\\", "lba": 935218376, "description": "Boot sector (MBR)"},
+        {"file_path": "D:\\MyProjects\\Python_Projects\\LBALab\\ntfs_forensics_toolkit.py", "lba": 933871504, "description": "Boot sector (MBR)"},
         # {"file_path": "C:\\", "lba": 8459073, "description": "Boot sector (MBR)"},
         # {"file_path": "C:\\", "lba": 8459074, "description": "Boot sector (MBR)"},
         # {"file_path": "C:\\", "lba": 8459075, "description": "Boot sector (MBR)"},

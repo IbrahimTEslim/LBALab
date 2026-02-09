@@ -266,7 +266,7 @@ def write_to_volume(payload, sector_offset, volume_letter):
 def main():
     # Configuration
     payload = "KilluaKillua"
-    sector_offset = 13364696
+    sector_offset = 928290264
     volume_letter = "D"
     
     print(f"DEBUG: Writing to sector {sector_offset} on volume {volume_letter}")
@@ -288,17 +288,17 @@ def main():
     read_from_volume(sector_offset, volume_letter)
     
     # Uncomment to enable writing
-    if write_to_volume(payload, sector_offset, volume_letter):
-        print("Write operation completed successfully.")
+    # if write_to_volume(payload, sector_offset, volume_letter):
+    #     print("Write operation completed successfully.")
         
-        # Read after writing to verify
-        print("\n=== AFTER WRITE ===")
-        read_from_volume(sector_offset, volume_letter)
+    #     # Read after writing to verify
+    #     print("\n=== AFTER WRITE ===")
+    #     read_from_volume(sector_offset, volume_letter)
         
-        return 0
-    else:
-        print("Write operation failed.")
-        return 1
+    #     return 0
+    # else:
+    #     print("Write operation failed.")
+    #     return 1
 
 if __name__ == "__main__":
     if os.name != 'nt':

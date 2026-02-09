@@ -24,6 +24,7 @@ Requires: Administrator privileges for low-level disk access
 
 import ctypes
 import os
+import sys
 from ctypes import wintypes
 
 # Windows constants

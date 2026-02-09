@@ -220,6 +220,7 @@ class WindowsFileBlockWriter:
         
         # For now, assume simple mapping (this could be enhanced to query actual physical drive)
         drive_num = ord(drive[0].upper()) - ord('A')
+        drive_num = 1
         return f"\\\\.\\PhysicalDrive{drive_num}"
     
     def write_above_blocks(self, filepath, data_to_write, offset_clusters=1):

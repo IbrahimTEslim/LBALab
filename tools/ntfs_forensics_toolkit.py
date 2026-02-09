@@ -194,7 +194,7 @@ class NTFSForensicsToolkit:
             handle = ctypes.windll.kernel32.CreateFileW(
                 drive_path, access, FILE_SHARE_READ | FILE_SHARE_WRITE,
                 None, OPEN_EXISTING,
-                FILE_FLAG_NO_BUFFERING if write_access else 0, None
+                FILE_FLAG_NO_BUFFERING, None
             )
             if handle == INVALID_HANDLE_VALUE:
                 raise ctypes.WinError()
@@ -467,10 +467,14 @@ class NTFSForensicsToolkit:
                 next_vcn = int.from_bytes(output_buffer[offset:offset+8], 'little')
                 lcn_raw = output_buffer[offset+8:offset+16]
                 
-                if lcn_raw == b'\\xff' * 8:
+                # Handle sparse extents properly
+                if lcn_raw == b'\xff' * 8:
                     lcn = -1  # Sparse
                 else:
-                    lcn = int.from_bytes(lcn_raw, 'little')
+                    # Parse as signed 64-bit integer to handle negative values
+                    lcn = int.from_bytes(lcn_raw, 'little', signed=True)
+                    if lcn < 0:  # Additional check for negative LCNs
+                        lcn = -1
                 
                 extents.append((current_vcn, next_vcn, lcn))
                 current_vcn = next_vcn
@@ -496,7 +500,7 @@ class NTFSForensicsToolkit:
             self.safe_handle_close(file_handle)
     
     def read_lba(self, drive_number: int, lba: int, size: int = None) -> bytes:
-        """Read data from specific LBA"""
+        """Read data from specific LBA on physical drive"""
         if size is None:
             size = self.sector_size
         
@@ -504,28 +508,117 @@ class NTFSForensicsToolkit:
         try:
             handle = self.open_physical_drive(drive_number, write_access=False)
             
+            # Calculate byte offset and ensure sector alignment
             byte_offset = lba * self.sector_size
-            low_part = byte_offset & 0xFFFFFFFF
-            high_part = (byte_offset >> 32) & 0xFFFFFFFF
-            high_part_ptr = ctypes.pointer(wintypes.LONG(high_part))
-            
-            result = ctypes.windll.kernel32.SetFilePointer(handle, low_part, high_part_ptr, 0)
-            if result == 0xFFFFFFFF:
-                error = ctypes.windll.kernel32.GetLastError()
-                if error != 0:
-                    raise Exception(f"Failed to set file pointer. Error: {error}")
-            
             aligned_size = ((size + self.sector_size - 1) // self.sector_size) * self.sector_size
+            
+            # Use SetFilePointerEx for 64-bit offset support
+            result = ctypes.windll.kernel32.SetFilePointerEx(
+                handle,
+                ctypes.c_longlong(byte_offset),
+                None,
+                0  # FILE_BEGIN
+            )
+            
+            if not result:
+                raise ctypes.WinError()
+            
+            # Read with aligned buffer
             buffer = ctypes.create_string_buffer(aligned_size)
             bytes_read = wintypes.DWORD(0)
             
             success = ctypes.windll.kernel32.ReadFile(handle, buffer, aligned_size, ctypes.byref(bytes_read), None)
             if not success:
-                raise Exception(f"Failed to read data. Error: {ctypes.windll.kernel32.GetLastError()}")
+                raise ctypes.WinError()
             
             return buffer.raw[:size]
         except Exception as e:
             raise NTFSForensicsError(f"Failed to read LBA {lba}: {e}")
+        finally:
+            self.safe_handle_close(handle)
+    
+    def read_lba_from_volume(self, drive_letter: str, lba_relative: int, size: int = None) -> bytes:
+        """Read data from specific LBA relative to volume start (not physical drive)"""
+        if size is None:
+            size = self.sector_size
+        
+        handle = None
+        try:
+            volume_path = f"\\\\.\\{drive_letter.upper()}:"
+            handle = ctypes.windll.kernel32.CreateFileW(
+                volume_path, GENERIC_READ,
+                FILE_SHARE_READ | FILE_SHARE_WRITE,
+                None, OPEN_EXISTING,
+                FILE_FLAG_NO_BUFFERING, None
+            )
+            if handle == INVALID_HANDLE_VALUE:
+                raise ctypes.WinError()
+            
+            # Calculate byte offset and ensure sector alignment
+            byte_offset = lba_relative * self.sector_size
+            aligned_size = ((size + self.sector_size - 1) // self.sector_size) * self.sector_size
+            
+            # Use SetFilePointerEx for 64-bit offset support
+            result = ctypes.windll.kernel32.SetFilePointerEx(
+                handle,
+                ctypes.c_longlong(byte_offset),
+                None,
+                0  # FILE_BEGIN
+            )
+            
+            if not result:
+                raise ctypes.WinError()
+            
+            # Read with aligned buffer
+            buffer = ctypes.create_string_buffer(aligned_size)
+            bytes_read = wintypes.DWORD(0)
+            
+            success = ctypes.windll.kernel32.ReadFile(handle, buffer, aligned_size, ctypes.byref(bytes_read), None)
+            if not success:
+                raise ctypes.WinError()
+            
+            return buffer.raw[:size]
+        except Exception as e:
+            raise NTFSForensicsError(f"Failed to read LBA {lba_relative} from volume {drive_letter}: {e}")
+        finally:
+            self.safe_handle_close(handle)
+    
+    def get_physical_drive_number(self, drive_letter: str) -> int:
+        """Get the actual physical drive number for a drive letter"""
+        handle = None
+        try:
+            # Open the volume to get disk extents
+            volume_path = f"\\\\.\\{drive_letter.upper()}:"
+            handle = ctypes.windll.kernel32.CreateFileW(
+                volume_path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                None, OPEN_EXISTING, 0, None
+            )
+            if handle == INVALID_HANDLE_VALUE:
+                raise NTFSForensicsError(f"Cannot open volume {drive_letter}:")
+            
+            # Use IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS to get physical drive
+            IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS = 0x560000
+            
+            # Proper structure for VOLUME_DISK_EXTENTS
+            buffer = ctypes.create_string_buffer(64)
+            returned = wintypes.DWORD()
+            
+            success = ctypes.windll.kernel32.DeviceIoControl(
+                handle, IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS,
+                None, 0, buffer, 64, ctypes.byref(returned), None
+            )
+            
+            if not success:
+                raise ctypes.WinError()
+            
+            # Structure: NumberOfDiskExtents (8 bytes) + DiskNumber (4 bytes) + ...
+            # NumberOfDiskExtents is at offset 0 (8 bytes)
+            # First extent's DiskNumber is at offset 8 (4 bytes)
+            disk_number = int.from_bytes(buffer[8:12], 'little')
+            return disk_number
+                
+        except Exception as e:
+            raise NTFSForensicsError(f"Failed to get physical drive number for {drive_letter}: {e}")
         finally:
             self.safe_handle_close(handle)
     
@@ -888,7 +981,98 @@ class NTFSForensicsToolkit:
                     
                 except Exception as e:
                     print(f"=== File Data Status ===")
-                    print(f"Could not determine residency: {e}")
+                    print(f"Could not determine residency from MFT: {e}")
+                    print("Trying direct extent query...")
+                    
+                    # Fallback: Try direct extent query
+                    try:
+                        file_handle = self.open_file(file_path)
+                        extents = self.get_file_extents(file_handle)
+                        self.safe_handle_close(file_handle)
+                        
+                        if extents is None:
+                            print("Status: RESIDENT (file data stored inside MFT record)")
+                        else:
+                            print("Status: NON-RESIDENT (file data stored in clusters on disk)")
+                            print()
+                            
+                            if extents:
+                                print("=== File Data Extents (VCN → LCN → LBA) ===")
+                                total_clusters = 0
+                                allocated_clusters = 0
+                                
+                                for i, (start_vcn, next_vcn, lcn) in enumerate(extents):
+                                    cluster_count = next_vcn - start_vcn
+                                    total_clusters += cluster_count
+                                    
+                                    if lcn == -1 or lcn >= 0xFFFFFFFFFFFFFF00:  # Check for sparse/invalid LCN
+                                        print(f"VCN {start_vcn}-{next_vcn-1} ({cluster_count} clusters) : Sparse (not allocated)")
+                                    else:
+                                        allocated_clusters += cluster_count
+                                        # Calculate relative and absolute LBAs
+                                        lcn_relative_lba = lcn * sectors_per_cluster
+                                        absolute_lba = partition_start_lba + lcn_relative_lba
+                                        byte_offset = absolute_lba * bytes_per_sector
+                                        size_bytes = cluster_count * vol_info.BytesPerCluster
+                                        
+                                        print(f"VCN {start_vcn}-{next_vcn-1} ({cluster_count} clusters, {size_bytes} bytes) : LCN {lcn} : LBA {absolute_lba} (rel: {lcn_relative_lba}) : Byte offset {byte_offset}")
+                                        
+                                        # Show first few bytes of content for verification
+                                        if i == 0:  # Only for first extent
+                                            try:
+                                                drive_num = self.get_physical_drive_number(drive_letter)
+                                                print(f"           Volume {drive_letter}: is on PhysicalDrive{drive_num}")
+                                                print(f"           Partition starts at LBA {partition_start_lba:,}")
+                                                print(f"           File data at relative LBA {lcn_relative_lba:,} (absolute: {absolute_lba:,})")
+                                                print()
+                                                
+                                                # Read from physical drive (absolute LBA)
+                                                content_phys = self.read_lba(drive_num, absolute_lba, min(512, size_bytes))
+                                                
+                                                # Read from volume (relative LBA)
+                                                content_vol = self.read_lba_from_volume(drive_letter, lcn_relative_lba, min(512, size_bytes))
+                                                
+                                                # Compare with actual file content
+                                                with open(file_path, 'rb') as f:
+                                                    file_content = f.read(min(512, size_bytes))
+                                                
+                                                preview_phys = content_phys[:64]
+                                                preview_vol = content_vol[:64]
+                                                file_preview = file_content[:64]
+                                                
+                                                print(f"           PhysicalDrive{drive_num}[{absolute_lba}]: {preview_phys[:32].hex()}")
+                                                print(f"           Volume {drive_letter}:[{lcn_relative_lba}]:       {preview_vol[:32].hex()}")
+                                                print(f"           File API:                {file_preview[:32].hex()}")
+                                                print()
+                                                print(f"           PhysDrive Match: {'✓ YES' if preview_phys == file_preview else '✗ NO'}")
+                                                print(f"           Volume Match:    {'✓ YES' if preview_vol == file_preview else '✗ NO'}")
+                                                
+                                                # Show text preview
+                                                if preview_vol == file_preview:
+                                                    text_preview = ''.join(chr(b) if 32 <= b <= 126 else '.' for b in preview_vol[:64])
+                                                    print(f"           Text: {text_preview}")
+                                                elif preview_phys == file_preview:
+                                                    text_preview = ''.join(chr(b) if 32 <= b <= 126 else '.' for b in preview_phys[:64])
+                                                    print(f"           Text: {text_preview}")
+                                                else:
+                                                    print(f"           ⚠️  Neither matches! Possible causes:")
+                                                    print(f"           - File is compressed/encrypted")
+                                                    print(f"           - Wrong physical drive number")
+                                                    print(f"           - Partition offset calculation error")
+                                            except Exception as e:
+                                                print(f"           Content verification failed: {e}")
+                                                import traceback
+                                                traceback.print_exc()
+                                
+                                print()
+                                print(f"Total clusters: {total_clusters:,}")
+                                print(f"Allocated clusters: {allocated_clusters:,}")
+                                print(f"Sparse clusters: {total_clusters - allocated_clusters:,}")
+                                print(f"Total allocated size: {allocated_clusters * vol_info.BytesPerCluster:,} bytes")
+                            else:
+                                print("Could not retrieve file extents")
+                    except Exception as e2:
+                        print(f"Direct extent query also failed: {e2}")
             
             # Show calculation breakdown
             print()
