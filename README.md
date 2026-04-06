@@ -1,5 +1,7 @@
 # NTFS Toolkit
 
+[![PyPI version](https://img.shields.io/pypi/v/ntfs-toolkit.svg)](https://pypi.org/project/ntfs-toolkit/)
+[![Downloads](https://img.shields.io/pypi/dm/ntfs-toolkit)](https://pypi.org/project/ntfs-toolkit/)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows-lightgrey.svg)]()
@@ -29,6 +31,12 @@ and learn how NTFS works — all from your terminal with live disk data.
 ## Install
 
 ```bash
+pip install ntfs-toolkit
+```
+
+Or from source:
+
+```bash
 git clone https://github.com/IbrahimTEslim/LBALab.git
 cd LBALab
 python -m venv .venv
@@ -39,12 +47,6 @@ python -m venv .venv
 # Windows CMD
 .venv\Scripts\activate.bat
 
-pip install -r requirements.txt
-```
-
-Or install as a package (editable mode for development):
-
-```bash
 pip install -e .
 ```
 
