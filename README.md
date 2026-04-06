@@ -1,7 +1,7 @@
 # NTFS Toolkit
 
 [![PyPI version](https://img.shields.io/pypi/v/ntfs-toolkit.svg)](https://pypi.org/project/ntfs-toolkit/)
-[![Downloads](https://pepy.tech/badge/ntfs-toolkit)](https://pepy.tech/projects/ntfs-toolkit)
+[![Downloads](https://static.pepy.tech/badge/ntfs-toolkit)](https://pepy.tech/projects/ntfs-toolkit)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows-lightgrey.svg)]()
