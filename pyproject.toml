@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ntfs-toolkit"
+version = "3.0.0"
+description = "NTFS forensics, low-level disk analysis, and education toolkit"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.8"
+authors = [
+    {name = "Ibrahim Isleem", email = "ibrahimtarekeslim@gmail.com"},
+]
+keywords = [
+    "ntfs", "forensics", "disk", "mft", "lba", "sectors",
+    "file-system", "windows", "security", "education",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: System :: Filesystems",
+    "Topic :: Education",
+]
+dependencies = [
+    "rich>=13.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/IbrahimTEslim/LBALab"
+Repository = "https://github.com/IbrahimTEslim/LBALab"
+Documentation = "https://github.com/IbrahimTEslim/LBALab/blob/main/docs/API.md"
+Issues = "https://github.com/IbrahimTEslim/LBALab/issues"
+
+[project.scripts]
+ntfs-toolkit = "ntfs_toolkit.explorer.cli:main"
+ntfs-learn = "ntfs_toolkit.learn.runner:main"
+
+[tool.setuptools.packages.find]
+include = ["ntfs_toolkit*"]
