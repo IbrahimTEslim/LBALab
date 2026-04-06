@@ -3,13 +3,14 @@ from setuptools import setup, find_packages
 setup(
     name="ntfs-toolkit",
     version="3.0.0",
-    description="NTFS forensics, analysis, and education toolkit",
+    description="NTFS forensics, low-level disk analysis, and education toolkit",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
-    author="NTFS Forensics Lab",
+    author="Ibrahim Isleem",
+    author_email="ibrahimtarekeslim@gmail.com",
     license="MIT",
     url="https://github.com/IbrahimTEslim/LBALab",
-    packages=find_packages(),
+    packages=find_packages(include=["ntfs_toolkit*"]),
     python_requires=">=3.8",
     install_requires=["rich>=13.0"],
     entry_points={
@@ -29,5 +30,6 @@ setup(
         "Programming Language :: Python :: 3",
         "Topic :: Security",
         "Topic :: System :: Filesystems",
+        "Topic :: Education",
     ],
 )
