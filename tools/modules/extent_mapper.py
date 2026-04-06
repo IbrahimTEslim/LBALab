@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Extent Mapper - Map file VCN → LCN → LBA
+Extent Mapper - Map file VCN   LCN   LBA
 Can be run standalone or imported
 """
 import sys
@@ -21,7 +21,7 @@ class ExtentMapper:
         self.analyzer = FileAnalyzer()
     
     def get_file_extents(self, file_path):
-        """Get file extents (VCN → LCN mapping)"""
+        """Get file extents (VCN   LCN mapping)"""
         handle = self.disk_io.open_file(file_path)
         try:
             input_buffer = STARTING_VCN_INPUT_BUFFER(0)
@@ -129,7 +129,7 @@ class ExtentMapper:
 def main():
     """Standalone CLI"""
     if not WindowsAPI.is_admin():
-        print("⚠️  Run as Administrator")
+        print("  Run as Administrator")
         return 1
     
     if len(sys.argv) < 2:
@@ -156,7 +156,7 @@ def main():
         print(f"\nFile is NON-RESIDENT")
         print(f"Partition Start LBA: {result['partition_lba']:,}")
         print(f"Sectors per Cluster: {result['sectors_per_cluster']}")
-        print(f"\n=== Extents (VCN → LCN → LBA) ===")
+        print(f"\n=== Extents (VCN   LCN   LBA) ===")
         
         for i, extent in enumerate(result['extents'], 1):
             if extent['type'] == 'sparse':

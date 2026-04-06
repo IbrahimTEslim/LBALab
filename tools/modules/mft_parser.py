@@ -172,7 +172,7 @@ class MFTParser:
 def main():
     """Standalone CLI"""
     if not WindowsAPI.is_admin():
-        print("⚠️  Run as Administrator")
+        print("  Run as Administrator")
         return 1
     
     if len(sys.argv) < 2:
@@ -211,7 +211,7 @@ def main():
         # Parse header
         header = parser.parse_mft_header(mft_data)
         print("\n=== MFT Record Header ===")
-        print(f"Signature: {header['signature'].decode('ascii', errors='ignore')} ({'✓ Valid' if header['signature_valid'] else '✗ Invalid'})")
+        print(f"Signature: {header['signature'].decode('ascii', errors='ignore')} ({' Valid' if header['signature_valid'] else ' Invalid'})")
         print(f"Sequence: {header['sequence_number']}")
         print(f"Link Count: {header['link_count']}")
         print(f"Flags: 0x{header['flags']:04x} ({header['flags_description']})")

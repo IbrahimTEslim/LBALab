@@ -139,14 +139,14 @@ class ComprehensiveAnalyzer:
                     print("=== File Data Status ===")
                     print("Status: NON-RESIDENT (file data stored in clusters on disk)")
                     print()
-                    print("=== File Data Extents (VCN → LCN → LBA) ===")
+                    print("=== File Data Extents (VCN   LCN   LBA) ===")
                     
                     for i, ext in enumerate(extent_data['extents'], 1):
                         if ext['type'] == 'sparse':
-                            print(f"Extent {i}: VCN {ext['start_vcn']}-{ext['next_vcn']-1} ({ext['cluster_count']} clusters) → SPARSE")
+                            print(f"Extent {i}: VCN {ext['start_vcn']}-{ext['next_vcn']-1} ({ext['cluster_count']} clusters)   SPARSE")
                         else:
                             print(f"Extent {i}: VCN {ext['start_vcn']}-{ext['next_vcn']-1} ({ext['cluster_count']} clusters, {ext['size_bytes']:,} bytes)")
-                            print(f"           → LCN {ext['lcn']:,} → LBA {ext['lba_absolute']:,} → Byte offset {ext['byte_offset']:,}")
+                            print(f"             LCN {ext['lcn']:,}   LBA {ext['lba_absolute']:,}   Byte offset {ext['byte_offset']:,}")
                             
                             # Content verification for first extent
                             if i == 1:
@@ -164,8 +164,8 @@ class ComprehensiveAnalyzer:
                                     print(f"           PhysicalDrive{drive_num}[{ext['lba_absolute']}]: {content_phys[:32].hex()}")
                                     print(f"           Volume {drive_letter}:[{ext['lba_relative']}]:       {content_vol[:32].hex()}")
                                     print(f"           File API:                {file_content[:32].hex()}")
-                                    print(f"           PhysDrive Match: {'✓ YES' if content_phys[:32] == file_content[:32] else '✗ NO'}")
-                                    print(f"           Volume Match:    {'✓ YES' if content_vol[:32] == file_content[:32] else '✗ NO'}")
+                                    print(f"           PhysDrive Match: {' YES' if content_phys[:32] == file_content[:32] else ' NO'}")
+                                    print(f"           Volume Match:    {' YES' if content_vol[:32] == file_content[:32] else ' NO'}")
                                 except Exception as e:
                                     print(f"           Content verification failed: {e}")
             except Exception as e:
@@ -174,10 +174,10 @@ class ComprehensiveAnalyzer:
         print()
         print("=== MFT Record LBA Calculation ===")
         print(f"1. MFT starts at LCN {vol_info['mft_start_lcn']:,}")
-        print(f"2. MFT byte offset = {vol_info['mft_start_lcn']:,} × {vol_info['bytes_per_cluster']:,} = {mft_start_bytes:,}")
-        print(f"3. Record {file_info['mft_record_number']:,} offset = {file_info['mft_record_number']:,} × {vol_info['mft_record_size']:,} = {mft_record_offset:,}")
+        print(f"2. MFT byte offset = {vol_info['mft_start_lcn']:,}   {vol_info['bytes_per_cluster']:,} = {mft_start_bytes:,}")
+        print(f"3. Record {file_info['mft_record_number']:,} offset = {file_info['mft_record_number']:,}   {vol_info['mft_record_size']:,} = {mft_record_offset:,}")
         print(f"4. Total offset = {mft_start_bytes:,} + {mft_record_offset:,} = {mft_absolute_offset:,}")
-        print(f"5. Relative LBA = {mft_absolute_offset:,} ÷ {bytes_per_sector:,} = {mft_lba_rel:,}")
+        print(f"5. Relative LBA = {mft_absolute_offset:,}   {bytes_per_sector:,} = {mft_lba_rel:,}")
         print(f"6. Absolute LBA = {partition_lba:,} + {mft_lba_rel:,} = {mft_lba_abs:,}")
     
     def analyze_mft_record(self, drive_letter, mft_record_number, show_hex=False):
@@ -213,7 +213,7 @@ class ComprehensiveAnalyzer:
         if mft_data[:4] == b'FILE':
             print("=== MFT Record Analysis ===")
             header = self.mft_parser.parse_mft_header(mft_data)
-            print(f"Signature: FILE (✓ Valid)")
+            print(f"Signature: FILE ( Valid)")
             print(f"Sequence Number: {header['sequence_number']}")
             print(f"Link Count: {header['link_count']}")
             print(f"Flags: 0x{header['flags']:04x} ({header['flags_description']})")
@@ -255,7 +255,7 @@ class ComprehensiveAnalyzer:
 
 def main():
     if not WindowsAPI.is_admin():
-        print("⚠️  Run as Administrator")
+        print("  Run as Administrator")
         return 1
     
     if len(sys.argv) < 2:

@@ -9,7 +9,7 @@ import argparse
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from core import WindowsAPI
-from modules import LBAReader, LBAWriter, ResidencyChecker, ComprehensiveAnalyzer
+from modules import LBAReader, LBAWriter, ResidencyChecker, ComprehensiveAnalyzer, SecureDeleter
 
 def main():
     """Main CLI with argument parsing and interactive mode"""
@@ -31,14 +31,16 @@ Examples:
     parser.add_argument('--write-lba', metavar='DRIVE:LBA:DATA', help='Write LBA (e.g., 0:2048:"data")')
     parser.add_argument('--check-residency', metavar='PATH', help='Check if file is resident')
     parser.add_argument('--mft-record', metavar='DRIVE:RECORD', help='Analyze MFT record (e.g., C:5)')
+    parser.add_argument('--secure-delete', metavar='PATH', help='SECURELY delete file (military-grade - IRREVERSIBLE)')
     parser.add_argument('--test', action='store_true', help='Run tests')
     parser.add_argument('--hex', action='store_true', help='Show hex dump')
+    parser.add_argument('--aggressive-write', action='store_true', help='Enable aggressive write mode (disk offline/dismount)')
     parser.add_argument('--version', action='version', version='NTFS Forensics Toolkit 2.0.0 (Modular)')
     
     args = parser.parse_args()
     
     if not WindowsAPI.is_admin():
-        print("⚠️  WARNING: Not running as Administrator.")
+        print("WARNING: Not running as Administrator.")
         print("   Some operations may fail.\n")
     
     try:
@@ -77,7 +79,12 @@ Examples:
                 
                 drive_str, lba_str, data = parts
                 lba = int(lba_str)
-                writer = LBAWriter()
+                writer = LBAWriter(enable_aggressive_write=args.aggressive_write)
+                
+                if args.aggressive_write:
+                    print("⚠️  AGGRESSIVE WRITE MODE ENABLED")
+                    print("   → Will attempt disk offline/dismount operations")
+                    print("   → Use with caution on system drives!")
                 
                 if drive_str.isdigit():
                     writer.write_physical(int(drive_str), lba, data)
@@ -111,6 +118,24 @@ Examples:
             analyzer = ComprehensiveAnalyzer()
             analyzer.test_common_files()
         
+        elif args.secure_delete:
+            print("SECURE DELETE MODE - MILITARY-GRADE FILE DESTRUCTION")
+            print("This operation is IRREVERSIBLE and will make data recovery IMPOSSIBLE")
+            
+            # Initialize secure deleter with aggressive mode
+            deleter = SecureDeleter(enable_aggressive_mode=True)
+            
+            # Perform secure deletion
+            success = deleter.secure_delete_file(args.secure_delete)
+            
+            if success:
+                print(f"\nFile securely deleted: {args.secure_delete}")
+                print("Recovery is IMPOSSIBLE by any known means")
+            else:
+                print(f"\nSecure deletion failed: {args.secure_delete}")
+                print("Some data may still be recoverable")
+                return 1
+        
         else:
             # Interactive mode
             interactive_mode()
@@ -132,6 +157,7 @@ def interactive_mode():
     reader = LBAReader()
     writer = LBAWriter()
     checker = ResidencyChecker()
+    deleter = SecureDeleter(enable_aggressive_mode=True)
     
     while True:
         print("\nOptions:")
@@ -140,9 +166,10 @@ def interactive_mode():
         print("3. Check file residency")
         print("4. Analyze MFT record")
         print("5. Write LBA")
-        print("6. Quit")
+        print("6. SECURE DELETE file (⚠️  DANGEROUS)")
+        print("7. Quit")
         
-        choice = input("\nChoose option (1-6): ").strip()
+        choice = input("\nChoose option (1-7): ").strip()
         
         if choice == "1":
             path = input("Enter file path: ").strip().strip('"')
@@ -214,6 +241,25 @@ def interactive_mode():
                 print(f"Error: {e}")
         
         elif choice == "6":
+            path = input("Enter file path to SECURELY DELETE: ").strip().strip('"')
+            if path:
+                try:
+                    print("\nWARNING: This will PERMANENTLY destroy the file!")
+                    print("   Recovery will be IMPOSSIBLE by any known means!")
+                    confirm = input("Type 'DESTROY' to continue: ").strip().upper()
+                    if confirm == 'DESTROY':
+                        success = deleter.secure_delete_file(path)
+                        if success:
+                            print(f"\nFile securely deleted: {path}")
+                            print("Recovery is IMPOSSIBLE")
+                        else:
+                            print(f"\nSecure deletion failed: {path}")
+                    else:
+                        print("Operation cancelled")
+                except Exception as e:
+                    print(f"Error: {e}")
+        
+        elif choice == "7":
             break
         else:
             print("Invalid option")

@@ -111,7 +111,7 @@ class FileAnalyzer:
 def main():
     """Standalone CLI"""
     if not WindowsAPI.is_admin():
-        print("⚠️  Run as Administrator")
+        print("  Run as Administrator")
         return 1
     
     if len(sys.argv) < 2:
