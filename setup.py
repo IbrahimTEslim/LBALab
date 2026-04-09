@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="ntfs-toolkit",
-    version="3.0.0",
+    version="3.0.1",
     description="NTFS forensics, low-level disk analysis, and education toolkit",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",

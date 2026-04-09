@@ -13,4 +13,4 @@ Modules:
     ntfs_toolkit.explorer    — Interactive terminal UI with rich panels
     ntfs_toolkit.learn       — Educational lessons with live disk data
 """
-__version__ = "3.0.0"
+__version__ = "3.0.1"
